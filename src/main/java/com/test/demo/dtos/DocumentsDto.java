@@ -5,11 +5,10 @@ import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
-public class DocumentInfoDto {
-  
+public class DocumentsDto {
     private String fileName;
-    private String hash;
+    private String hashSha256;
+    private String hashSha512;
     private LocalDateTime lastUpload;
-
 
 }

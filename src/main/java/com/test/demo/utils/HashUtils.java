@@ -2,44 +2,59 @@ package com.test.demo.utils;
 
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.web.multipart.MultipartFile;
 
 public class HashUtils {
   
-    // Método para calcular el hash del archivo
-   public static String calculateHash(MultipartFile file, String hashType) throws Exception {
-    // Obtener el flujo de entrada del archivo
+  public static Map<String, String> calculateHashes(MultipartFile file) throws Exception {
+    //entrada del archivo
     InputStream inputStream = file.getInputStream();
 
-    // Seleccionar el algoritmo de hash según el tipo especificado (SHA-256 o SHA-512)
-    MessageDigest messageDigest = MessageDigest.getInstance(hashType);
+    // elegimos el algoritmo de hash
+    MessageDigest sha256Digest = MessageDigest.getInstance("SHA-256");
+    MessageDigest sha512Digest = MessageDigest.getInstance("SHA-512");
 
     byte[] buffer = new byte[8192];
     int bytesRead;
 
-    // Leer el archivo en bloques y actualizar el hash
+    // Leer el archivoy actualizar los hashes
     while ((bytesRead = inputStream.read(buffer)) != -1) {
-        messageDigest.update(buffer, 0, bytesRead);
+        sha256Digest.update(buffer, 0, bytesRead);
+        sha512Digest.update(buffer, 0, bytesRead);
     }
 
-    // Calcular el hash y convertirlo a una cadena hexadecimal
-    byte[] hashBytes = messageDigest.digest();
-    StringBuilder hashStringBuilder = new StringBuilder();
+    // Calcular los hashes y convertirlos
+    byte[] sha256HashBytes = sha256Digest.digest();
+    byte[] sha512HashBytes = sha512Digest.digest();
 
-    for (byte hashByte : hashBytes) {
+    StringBuilder sha256HashStringBuilder = new StringBuilder();
+    StringBuilder sha512HashStringBuilder = new StringBuilder();
+
+    for (byte hashByte : sha256HashBytes) {
         String hex = Integer.toHexString(0xff & hashByte);
         if (hex.length() == 1) {
-            hashStringBuilder.append('0');
+            sha256HashStringBuilder.append('0');
         }
-        hashStringBuilder.append(hex);
+        sha256HashStringBuilder.append(hex);
     }
 
-    // Cerrar el flujo de entrada del archivo
+    for (byte hashByte : sha512HashBytes) {
+        String hex = Integer.toHexString(0xff & hashByte);
+        if (hex.length() == 1) {
+            sha512HashStringBuilder.append('0');
+        }
+        sha512HashStringBuilder.append(hex);
+    }
     inputStream.close();
 
-    // Devolver el hash calculado como una cadena hexadecimal
-    return hashStringBuilder.toString();
-}
+    // almacenar los hashes
+    Map<String, String> hashes = new HashMap<>();
+    hashes.put("SHA-256", sha256HashStringBuilder.toString());
+    hashes.put("SHA-512", sha512HashStringBuilder.toString());
 
+    return hashes;
+  }
 }

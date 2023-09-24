@@ -5,9 +5,9 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class UploadResponseSHA512Dto {
-  
-  private String algorithm = "SHA-512";
+public class UploadResponseDto {
+
+  private String algorithm;
   private List<DocumentInfoDto> documents;
-  
+
 }
