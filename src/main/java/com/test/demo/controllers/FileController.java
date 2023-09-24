@@ -51,43 +51,22 @@ public ResponseEntity<?> uploadDocuments(
             String sha256Hash = hashes.get("SHA-256"); 
             String sha512Hash = hashes.get("SHA-512"); 
 
-            Optional<File> existingDocument;
-
-            // Verificar si el hash ya existe en la BD
-            if (hashType.equals("SHA-256")) {
-                existingDocument = fileRepository.findByHashSha256(sha256Hash);
-            } else {
-                existingDocument = fileRepository.findByHashSha512(sha512Hash);
-            }
+            File newDocument = new File();
+            newDocument.setFileName(file.getOriginalFilename());
+            newDocument.setHashSha256(sha256Hash);
+            newDocument.setHashSha512(sha512Hash);
+            newDocument.setLastUpload(null);
+            fileRepository.save(newDocument);
 
             DocumentInfoDto documentInfo = new DocumentInfoDto();
             documentInfo.setFileName(file.getOriginalFilename());
             documentInfo.setLastUpload(LocalDateTime.now());
             documentInfo.setHash("SHA-256".equals(hashType) ? sha256Hash : sha512Hash);
-
-            if (existingDocument.isPresent()) {
-                // El documento ya existe en la BD, actualizar lastUpload
-                File document = existingDocument.get();
-                document.setLastUpload(LocalDateTime.now());
-                fileRepository.save(document);
-                documentInfo.setLastUpload(document.getLastUpload());
-            } else {
-                // Crear un nuevo registro
-                File newDocument = new File();
-                newDocument.setFileName(file.getOriginalFilename()); 
-                if (hashType.equals("SHA-256")) {
-                    newDocument.setHashSha256(sha256Hash);
-                } else {
-                    newDocument.setHashSha512(sha512Hash);
-                }
-                newDocument.setLastUpload(null); 
-                fileRepository.save(newDocument);
-            }
-
             documentInfoList.add(documentInfo);
+
         }
 
-        
+    
         UploadResponseDto response = new UploadResponseDto();
         response.setAlgorithm(hashType);
         response.setDocuments(documentInfoList);
@@ -127,11 +106,12 @@ public ResponseEntity<?> uploadDocuments(
       return documentInfoList;
   }
   
-//list file by hashtype & hash
+//get file by hashtype & hash
   @GetMapping("/api/document")
 public ResponseEntity<?> getDocumentByHash(
         @RequestParam("hashType") String hashType,
-        @RequestParam("hash") String hash) {
+        @RequestParam("hash") String hash) 
+        {
     try {
         Optional<File> optionalFile;
 
@@ -147,8 +127,7 @@ public ResponseEntity<?> getDocumentByHash(
             File file = optionalFile.get();
             DocumentsDto documentInfo = new DocumentsDto();
             documentInfo.setFileName(file.getFileName());
-
-            // Incluir el hash especificado en la respuesta
+            
             if (hashType.equals("SHA-256")) {
                 documentInfo.setHashSha256(file.getHashSha256());
             } else if (hashType.equals("SHA-512")) {

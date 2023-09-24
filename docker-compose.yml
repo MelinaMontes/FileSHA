@@ -1,0 +1,19 @@
+version: '3'
+services:
+  spring-boot-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: boxcustodia
+      POSTGRES_USER: prueba
+      POSTGRES_PASSWORD: catalina1010
+    ports:
+      - "5432:5432"
