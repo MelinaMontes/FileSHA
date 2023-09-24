@@ -1,14 +1,15 @@
 package com.test.demo.exceptions;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
-
+/*
+ * lanzamos esto cuando el archivo no se subio o es muy grande
+ *
+ * */
 @ControllerAdvice
 public class ExceptionHandlerCustom {
    @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -33,15 +34,6 @@ public class ExceptionHandlerCustom {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-      @ExceptionHandler(HashTypeException.class)
-    public ResponseEntity<ErrorResponse> handleHashTypeException(HashTypeException ex, HttpServletRequest request) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(System.currentTimeMillis());
-        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
-        errorResponse.setMessage("El parámetro 'hash' solo puede ser 'SHA-256' o 'SHA-512'.");
-        errorResponse.setPath(request.getRequestURI());
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
+
 }
 

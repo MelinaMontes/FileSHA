@@ -1,5 +1,10 @@
 package com.test.demo.services;
 
-public class FileService {
-  
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
+
+public interface FileService {
+   public Map<String, String> calculateHashes(MultipartFile file) throws Exception;
 }
+

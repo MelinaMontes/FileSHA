@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.test.demo.services.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,79 +21,77 @@ import com.test.demo.dtos.DocumentInfoDto;
 import com.test.demo.dtos.DocumentsDto;
 import com.test.demo.dtos.UploadResponseDto;
 import com.test.demo.entities.File;
-import com.test.demo.exceptions.ErrorResponse;
 import com.test.demo.exceptions.HashTypeException;
 import com.test.demo.repos.FileRepository;
-
-import com.test.demo.utils.HashUtils;
-
+import com.test.demo.utils.Responses;
 
 @RestController
 public class FileController {
 
   @Autowired 
-  FileRepository fileRepository;
-  
-@PostMapping("api/documents/hash")
-public ResponseEntity<?> uploadDocuments(
-    @RequestParam("hashType") String hashType,
-    @RequestParam("files") List<MultipartFile> files) {
+  private FileRepository fileRepository;
+  @Autowired
+  private FileService fileService;
 
-    try {
-         if (!hashType.equals("SHA-256") && !hashType.equals("SHA-512")) {
-        throw new HashTypeException("El parámetro 'hash' solo puede ser 'SHA-256' o 'SHA-512'");
-    }
+    @PostMapping("api/documents/hash")
+    public ResponseEntity<?> uploadDocuments(
+            @RequestParam("hashType") String hashType,
+            @RequestParam("files") List<MultipartFile> files) {
 
-        List<DocumentInfoDto> documentInfoList = new ArrayList<>();
-        for (MultipartFile file : files) {
+        try {
+            if (!hashType.equals("SHA-256") && !hashType.equals("SHA-512")) {
+                throw new HashTypeException("El parámetro 'hash' solo puede ser 'SHA-256' o 'SHA-512'");
+            }
 
-            Map<String, String> hashes = HashUtils.calculateHashes(file);
+            List<DocumentInfoDto> documentInfoList = new ArrayList<>();
+            for (MultipartFile file : files) {
 
-            String sha256Hash = hashes.get("SHA-256"); 
-            String sha512Hash = hashes.get("SHA-512"); 
+                Map<String, String> hashes = fileService.calculateHashes(file);
+                String sha256Hash = hashes.get("SHA-256");
+                String sha512Hash = hashes.get("SHA-512");
 
-            File newDocument = new File();
-            newDocument.setFileName(file.getOriginalFilename());
-            newDocument.setHashSha256(sha256Hash);
-            newDocument.setHashSha512(sha512Hash);
-            newDocument.setLastUpload(null);
-            fileRepository.save(newDocument);
+                File existingFile = fileRepository.findByHashSha256OrHashSha512(sha256Hash, sha512Hash);
 
-            DocumentInfoDto documentInfo = new DocumentInfoDto();
-            documentInfo.setFileName(file.getOriginalFilename());
-            documentInfo.setLastUpload(LocalDateTime.now());
-            documentInfo.setHash("SHA-256".equals(hashType) ? sha256Hash : sha512Hash);
-            documentInfoList.add(documentInfo);
+                DocumentInfoDto documentInfo = new DocumentInfoDto();
+                documentInfo.setFileName(file.getOriginalFilename());
+                documentInfo.setHash("SHA-256".equals(hashType) ? sha256Hash : sha512Hash);
 
+                if (existingFile == null) {
+                    File newDocument = new File();
+                    newDocument.setFileName(file.getOriginalFilename());
+                    newDocument.setHashSha256(sha256Hash);
+                    newDocument.setHashSha512(sha512Hash);
+                    newDocument.setLastUpload(LocalDateTime.now());
+                    fileRepository.save(newDocument);
+
+                } else {
+                    existingFile.setLastUpload(LocalDateTime.now());
+                    fileRepository.save(existingFile);
+                    documentInfo.setLastUpload(existingFile.getLastUpload());
+                }
+
+                documentInfoList.add(documentInfo);
+            }
+
+            UploadResponseDto response = new UploadResponseDto();
+            response.setAlgorithm(hashType);
+            response.setDocuments(documentInfoList);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (MultipartException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Responses.buildErrorResponse(ex));
+        } catch (HashTypeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Responses.buildErrorResponse(ex.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en el procesamiento de archivos: " + e.getMessage());
         }
-
-    
-        UploadResponseDto response = new UploadResponseDto();
-        response.setAlgorithm(hashType);
-        response.setDocuments(documentInfoList);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    } catch (MultipartException ex) {
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(buildErrorResponse(ex));
-
-    } catch (HashTypeException ex) {
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(buildErrorResponse(ex.getMessage()));
-
-    } catch (Exception e) {
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en el procesamiento de archivos: " + e.getMessage());
     }
-}
 
-  
-  //list all files 
+    //list all files
   @GetMapping("/api/documents")
   public List<DocumentsDto> getDocuments() {
       List<File> files = fileRepository.findAll();
-      
-      // Convierte la lista de File en una lista de DocumentInfoDto
+
       List<DocumentsDto> documentInfoList = new ArrayList<>();
       for (File file : files) {
           DocumentsDto documentInfo = new DocumentsDto();
@@ -110,7 +109,7 @@ public ResponseEntity<?> uploadDocuments(
   @GetMapping("/api/document")
 public ResponseEntity<?> getDocumentByHash(
         @RequestParam("hashType") String hashType,
-        @RequestParam("hash") String hash) 
+        @RequestParam("hash") String hash)
         {
     try {
         Optional<File> optionalFile;
@@ -127,10 +126,10 @@ public ResponseEntity<?> getDocumentByHash(
             File file = optionalFile.get();
             DocumentsDto documentInfo = new DocumentsDto();
             documentInfo.setFileName(file.getFileName());
-            
+
             if (hashType.equals("SHA-256")) {
                 documentInfo.setHashSha256(file.getHashSha256());
-            } else if (hashType.equals("SHA-512")) {
+            } else {
                 documentInfo.setHashSha512(file.getHashSha512());
             }
 
@@ -147,28 +146,5 @@ public ResponseEntity<?> getDocumentByHash(
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error en el servidor: " + e.getMessage());
     }
 }
-
-  
-  
-
-  
-
-    private ErrorResponse buildErrorResponse(String message) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(System.currentTimeMillis());
-        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
-        errorResponse.setMessage(message);
-        errorResponse.setPath("/api/documents/hash");
-        return errorResponse;
-    }
-
-    private ErrorResponse buildErrorResponse(MultipartException ex) {
-        ErrorResponse errorResponse = new ErrorResponse();
-        errorResponse.setTimestamp(System.currentTimeMillis());
-        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
-        errorResponse.setMessage(ex.getMessage());
-        errorResponse.setPath("/api/documents/hash");
-        return errorResponse;
-    }
 
 }
