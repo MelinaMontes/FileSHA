@@ -106,21 +106,19 @@ public class FileController {
   }
   
 //get file by hashtype & hash
-  @GetMapping("/api/document")
+@GetMapping("/api/document")
 public ResponseEntity<?> getDocumentByHash(
         @RequestParam("hashType") String hashType,
-        @RequestParam("hash") String hash)
-        {
+        @RequestParam("hash") String hash) {
     try {
-        Optional<File> optionalFile;
 
-        if (hashType.equals("SHA-256")) {
-            optionalFile = fileRepository.findByHashSha256(hash);
-        } else if (hashType.equals("SHA-512")) {
-            optionalFile = fileRepository.findByHashSha512(hash);
-        } else {
+        if (!("SHA-256".equals(hashType) || "SHA-512".equals(hashType))) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Tipo de hash no válido.");
         }
+
+        Optional<File> optionalFile = (hashType.equals("SHA-256"))
+                ? fileRepository.findByHashSha256(hash)
+                : fileRepository.findByHashSha512(hash);
 
         if (optionalFile.isPresent()) {
             File file = optionalFile.get();
@@ -132,19 +130,22 @@ public ResponseEntity<?> getDocumentByHash(
             } else {
                 documentInfo.setHashSha512(file.getHashSha512());
             }
-
-            // Incluir la fecha de la última carga si está disponible
             if (file.getLastUpload() != null) {
                 documentInfo.setLastUpload(file.getLastUpload());
             }
 
             return ResponseEntity.status(HttpStatus.OK).body(documentInfo);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún documento con ese hash.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Responses.createErrorResponse(HttpStatus.BAD_REQUEST,
+                    "No se encontró ningún documento con ese hash.", "api/document"
+                    ));
+
         }
     } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error en el servidor: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró ningún documento con ese hash.");
     }
 }
 
 }
+
+

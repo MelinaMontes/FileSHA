@@ -22,4 +22,13 @@ public class Responses {
         errorResponse.setPath("/api/documents/hash");
         return errorResponse;
     }
+    public static ErrorResponse createErrorResponse(HttpStatus status, String message, String path) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setTimestamp(System.currentTimeMillis());
+        errorResponse.setStatus(status.value());
+        errorResponse.setMessage(message);
+        errorResponse.setPath("api/document");
+        return errorResponse;
+    }
+
 }

@@ -6,9 +6,10 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
+
 /*
  * lanzamos esto cuando el archivo no se subio o es muy grande
- *
+
  * */
 @ControllerAdvice
 public class ExceptionHandlerCustom {
@@ -33,7 +34,4 @@ public class ExceptionHandlerCustom {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
-
-
 }
-
