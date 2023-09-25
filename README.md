@@ -9,14 +9,12 @@ Con ' docker compose up -d ' iniciamos los contenedores y luego deberiamos levan
 
 Servicios: 
 
--POST http://localhost:8080/api/documents/hash
+POST http://localhost:8080/api/documents/hash
   Body: form-data (files)
   Params: hashType (SHA-256 | SHA-512)
--
-  
--GET http://localhost:8080/api/documents 
--
 
--GET http://localhost:8080/api/document?hashType=&hash=
+GET http://localhost:8080/api/documents 
+
+GET http://localhost:8080/api/document?hashType=&hash=
   Params: hashType (SHA-256 | SHA-512) ; hash(valor)
--
+
