@@ -7,4 +7,16 @@ Tanto el api como la base de datos se encuentran en un contenedor, lo cual deber
 
 Con ' docker compose up -d ' iniciamos los contenedores y luego deberiamos levantar el api desde el IDE.
 
+Servicios: 
 
+-POST http://localhost:8080/api/documents/hash
+  Body: form-data (files)
+  Params: hashType (SHA-256 | SHA-512)
+-
+  
+-GET http://localhost:8080/api/documents 
+-
+
+-GET http://localhost:8080/api/document?hashType=&hash=
+  Params: hashType (SHA-256 | SHA-512) ; hash(valor)
+-
